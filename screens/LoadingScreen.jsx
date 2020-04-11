@@ -1,42 +1,56 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, View, Text } from 'react-native';
+import React, { useEffect, useContext } from 'react';
+import { ActivityIndicator, View, Text, Alert } from 'react-native';
 import firebase from 'firebase';
+import firestore from 'firebase/firestore';
+import { UserContext } from "../contexts/userContext.js";
 
 const LoadingScreen = ({ navigation }) => {
+
+  const state = useContext(UserContext);
 
   useEffect(() => {
     console.log("check if Logged In");
     firebase.auth().onAuthStateChanged((user) => {
-      console.log("user : ", user);
+      console.log("onAuthStateChanged");
       if (user != null) {
         console.log("user != null");
         if (user.providerData[0].providerId == "facebook.com") {
-          navigation.navigate("VoterStack");
-          // firebase.database().ref("/voters/" + user.uid).once('value').then((doc) => {
-          //   const u = doc.val();
-          //   setAdmin(u.admin);
-          //   setLoggedIn(true);
-          //   setUser(u);
-          //   navigation.navigate("VoterStack");
-          // });
+          firebase.firestore().collection("voters").doc(user.uid).get()
+          .then((snapshot) => {
+            if (snapshot.exists) {
+              const u = snapshot.data();
+              console.log("u : ", u);
+              state.getUser(u);
+              navigation.navigate("VoterStack");
+            } else {
+              console.log('document not found');
+            }
+          })
+          .catch((err) => {
+            console.log("err : ", err);
+            Alert.alert(err);
+          });
         }
         else {
-          navigation.navigate("CampaignStack");
-          // firebase.database().ref("campaigns/" + user.uid).once('value').then((doc) => {
-          //   const u = doc.val();
-          //   setAdmin(u.admin);
-          //   setLoggedIn(true);
-          //   setUser(u);
-          //   navigation.navigate("CampaignStack");
-          // });
+          console.log("here 1");
+          firebase.firestore().collection("campaigns").doc(user.uid).get()
+          .then((snapshot) => {
+            console.log("here 2");
+            const u = snapshot.data();
+            console.log("u : ", u);
+            state.getUser(u);
+            navigation.navigate("CampaignStack");
+          })
+          .catch((err) => {
+            console.log("err : ", err);
+            Alert.alert(err);
+          })
         }
       }
       else {
         console.log("user == null");
         navigation.navigate("LoginScreen");
-        // setAdmin(false);
-        // setLoggedIn(false);
-        // setUser({});
+        state.getUser({});
       }
     });
   }, []);

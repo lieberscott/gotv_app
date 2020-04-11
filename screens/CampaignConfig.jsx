@@ -1,10 +1,14 @@
 import React from 'react';
 import { useState, useEffect, useContext } from 'react';
-import { StyleSheet, Text, View, Button, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, Button, TouchableOpacity, Alert, TextInput } from 'react-native';
 
 const Config = () => {
 
   const [publicName, setPublicName] = useState("");
+
+  const handleReset = () => {
+    
+  }
 
   const handleChange = () => {
 

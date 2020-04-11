@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Button, FlatList, TouchableOpacity, Alert } from 'react-native';
 import * as Facebook from 'expo-facebook';
 import * as firebase from 'firebase';
+import firestore from 'firebase/firestore';
 
 const Login = (props) => {
 
@@ -19,22 +20,23 @@ const Login = (props) => {
         permissions: ['public_profile'],
       });
       if (type === 'success') {
-        console.log("token : ", token);
+        console.log("token : ");
         // Get the user's name using Facebook's Graph API
         const response = await fetch(`https://graph.facebook.com/me?access_token=${token}`);
 
-        console.log("response : ", JSON.stringify(response));
+        console.log("response : ");
         // Build Firebase credential with the Facebook access token.
         let credential = firebase.auth.FacebookAuthProvider.credential(token);
-        console.log("credential : ", credential);
+        console.log("credential : ");
         // Sign in with credential from the Fb user.
         firebase.auth().signInWithCredential(credential)
         .then((result) => {
-          console.log("result : ", result);
+          console.log("result");
           if (result.additionalUserInfo.isNewUser) {
-            firebase.database().ref("/voters/" + result.user.uid)
+            firebase.firestore().collection(voters).doc(result.user.uid)
             .set({
               email: result.user.email,
+              // uid: result.user.uid,
               profile_picture: result.additionalUserInfo.profile.picture,
               firstname: result.additionalUserInfo.profile.given_name,
               admin: false,
@@ -43,16 +45,21 @@ const Login = (props) => {
               // to be added by voter on config page
               // voting_address, address_last_updated,convos_arr, will_vote_for(if doable)
             })
+            .catch((err) => {
+              Alert.alert(err);
+            })
           }
           else {
-            firebase.database().ref("/voters/" + result.user.uid)
-            .update({
+            firebase.firestore().collection("voters").doc(result.user.uid)
+            .set({
               last_logged_in: Date.now()
-            });
+            })
+            .catch((err) => {
+              Alert.alert(err);
+            })
           }
 
         })
-        // .then(() => checkIfLoggedIn())
         .catch((error) => {
           // Handle Errors here.
           let errorCode = error.code;
@@ -66,7 +73,6 @@ const Login = (props) => {
 
 
         Alert.alert('Logged in!!', `Hi ${(await response.json()).name}!`);
-        // checkIfLoggedIn();
       } else {
         // type === 'cancel'
       }

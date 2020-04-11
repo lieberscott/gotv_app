@@ -17,10 +17,10 @@ const firebaseConfig = {
     authDomain: "other-side-app-69d00.firebaseapp.com",
     databaseURL: "https://other-side-app-69d00.firebaseio.com",
     projectId: "other-side-app-69d00",
-    storageBucket: "other-side-app-69d00.appspot.com",
-    messagingSenderId: "1098826575801",
+    // storageBucket: "other-side-app-69d00.appspot.com",
+    // messagingSenderId: "1098826575801",
     appId: "1:1098826575801:web:8c16aae9542383c8085068",
-    measurementId: "G-H8QWR5WJRL"
+    // measurementId: "G-H8QWR5WJRL"
   };
 if (firebase.apps.length < 1) {
   firebase.initializeApp(firebaseConfig);
@@ -37,11 +37,19 @@ export default function App() {
   const [admin, setAdmin] = useState(false);
   const [user, setUser] = useState({});
 
+  const getUser = (u) => {
+    console.log("get user called : ");
+    setUser(u);
+  }
+
   if (loaded) {
     console.log("admin : ", admin);
     return (
       <View style={{ flex: 1 }}>
-        <UserContext.Provider value={ user }>
+        <UserContext.Provider value={{
+          user,
+          getUser
+        }}>
           <AppNavigator />
         </UserContext.Provider>
       </View>

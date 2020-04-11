@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Button, FlatList, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import firebase from 'firebase';
+import firestore from 'firebase/firestore';
+import geohash from 'ngeohash';
 
 const Register = ({navigation}) => {
 
@@ -40,30 +42,40 @@ const Register = ({navigation}) => {
       firebase.auth().createUserWithEmailAndPassword(values.email.toLowerCase(), values.password)
       .then((result) => {
         let uid = result.user.uid;
-        console.log("result : ", result);
         if (result.additionalUserInfo.isNewUser) {
-          console.log("is new user : ", uid);
-          return firebase.database().ref("/campaigns/" + uid)
-          .set({
-            uid: uid,
-            campaign_verified: false, // manually ensuring campaign is legit
-            campaign_id: "", // manually entering a campaign_id to match with other candidates in the same race
-            office: values.office, // manually entering the level "State Representative", "County Judge, etc. so voter knows what level they're dealing with
-            website: values.website,
-            candidate_first: values.candidatefirst,
-            candidate_last: values.candidatelast,
-            public_name: values.publicname,
-            zip_code: values.zipcode,
-            primary: primary,
-            user_first: values.userfirst,
-            user_last: values.userlast,
-            convos_arr: [],
-            email_verified: false,
-            created_at: Date.now(),
-            admin: true,
-            paid: false,
-            profile_picture: "",
-            last_logged_in: Date.now()
+          console.log("is new userr : ", uid);
+          fetch("https://maps.googleapis.com/maps/api/geocode/json?address=" + values.zipcode + "&key=AIzaSyBDHMpWOZmEbIGaxC8iNPMBWIGOQgbOl38")
+          .then((res) => res.json())
+          .then((json) => {
+            console.log("json.results[0].geometry.location : ", json.results[0].geometry.location);
+            const lat = json.results[0].geometry.location.lat;
+            const lng = json.results[0].geometry.location.lng;
+            const hash = geohash.encode(lat, lng);
+            console.log("hash : ", hash);
+            return firebase.firestore().collection("campaigns").doc(uid)
+            .set({
+              campaign_verified: false, // manually ensuring campaign is legit
+              campaign_id: "", // manually entering a campaign_id to match with other candidates in the same race
+              office: values.office, // manually entering the level "State Representative", "County Judge, etc. so voter knows what level they're dealing with
+              website: values.website,
+              candidate_first: values.candidatefirst,
+              candidate_last: values.candidatelast,
+              public_name: values.publicname,
+              zip_code: values.zipcode,
+              lat,
+              lng,
+              geohash: hash,
+              primary: primary,
+              user_first: values.userfirst,
+              user_last: values.userlast,
+              convos_arr: [],
+              email_verified: false,
+              created_at: Date.now(),
+              admin: true,
+              paid: false,
+              profile_picture: "",
+              last_logged_in: Date.now()
+            })
           })
         }
         else {

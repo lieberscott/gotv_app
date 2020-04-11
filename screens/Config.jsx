@@ -3,6 +3,8 @@ import { useState, useEffect, useContext } from 'react';
 import { StyleSheet, Text, View, Button, TouchableOpacity, Alert, TextInput } from 'react-native';
 
 import firebase from 'firebase';
+import firestore from 'firebase/firestore';
+import geohash from 'ngeohash';
 import { UserContext } from "../contexts/userContext.js";
 
 const Config = () => {
@@ -13,63 +15,55 @@ const Config = () => {
   const handleChangeAddress = () => {
 
     if (address == "") {
-      Alert.alert("No address entered");
+      Alert.alert("No address entered.");
       return;
     }
     else {
-      firebase.database().ref("/voters/" + user.user.uid)
-      .update({
-        voting_address: address
-      });
+      fetch("https://maps.googleapis.com/maps/api/geocode/json?address=" + address + "&key=AIzaSyBDHMpWOZmEbIGaxC8iNPMBWIGOQgbOl38")
+      .then((res) => res.json())
+      .then((json) => {
+        console.log("json.results[0].geometry.location : ", json.results[0].geometry.location);
+        const lat = json.results[0].geometry.location.lat;
+        const lng = json.results[0].geometry.location.lng;
+        const hash = geohash.encode(lat, lng);
+        return firebase.firestore().collection("voters").doc(user.user.uid)
+        .set({ voting_address: address, lat, lng, geohash: hash });
+      })
+      .then(() => {
+        setAddress("");
+        Alert.alert("Address updated");
+      })
+      .catch((err) => {
+        Alert.alert(err);
+      })
     }
+  }
 
-    // fetch /requestreseet
-    fetch("https://negron.glitch.me/changeaddress", {
-      method: "POST",
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ gotv_token })
-    })
-    .then((res) => res.json())
-    .then((json) => {
-      console.log("json : ", json);
-      Alert.alert("An email has been sent.");
-      setAddress("");
-    })
-    .catch((err) => {
-      console.log("Err : ", err);
-      Alert.alert("Unable to send reset email. Please try again.");
-      setAddress("");
-    });
+  const deletePress = () => {
+    Alert.alert("Are you sure you want to delete your account?", "This can not be undone", [
+      { text: "Yes, continue", onPress: () => handleDelete() },
+      { text: "No, keep my account", onPress: () => console.log("canceled") }
+    ]);
+
   }
 
   const handleDelete = () => {
-    Alert.alert("Are you sure you want to delete your account? This can not be undone.");
-    // fetch /deleteaccount
-    fetch("http://localhost:3000/deleteaccount", {
-      method: "POST",
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ gotv_token })
+    firebase.auth().currentUser().delete().then(() => {
+      return firebase.database().collection("voters").doc(user.user.uid).delete();
     })
-    .then((res) => res.json())
-    .then((json) => {
-      console.log("json : ", json);
+    .then(() => {
+      return firebase.auth().signOut();
+    })
+    .then(() => {
       Alert.alert("Your account has been deleted.");
-      getLogin(false);
     })
     .catch((err) => {
-      console.log("Err : ", err);
-      Alert.alert("Unable to delete account. Please try again.");
-    });
+      Alert.alert(err);
+    })
+
   }
 
   const handleTextChange = (e) => {
-    console.log("text change");
     setAddress(e);
   }
 

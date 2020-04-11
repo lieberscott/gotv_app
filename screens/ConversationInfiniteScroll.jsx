@@ -5,6 +5,7 @@ import { StyleSheet, Text, View, Button, FlatList, TouchableOpacity, Image, Aler
 import firebase from 'firebase';
 
 import Conversation from './Conversation';
+import { UserContext } from "../contexts/userContext.js";
 
 const ConversationInfiniteScroll = ({ navigation }) => {
   const [error, setError] = useState(false);
@@ -26,8 +27,17 @@ const ConversationInfiniteScroll = ({ navigation }) => {
       sender: "Dubbo"
     }],
     voter_id: "Scott",
-    campaign_ids: ["Brad", "Dubbo"],
-    read_by: ["Brad"],
+    campaign_participants: [{
+      _id: 12345,
+      name: "Brad",
+      avatar: "google.com"
+    },
+    {
+      _id: 1234,
+      name: "Dubbo",
+      avatar: "facebook.com"
+    }],
+    read_by: [1234],
     date_of_last_message: Date.now()
   }]);
   const [refreshing, setRefreshing] = useState(false);
@@ -36,16 +46,18 @@ const ConversationInfiniteScroll = ({ navigation }) => {
   // useEffect(() => {
   const x = () => {
     console.log("Conversation screen");
-    firebase.datebase().collection("conversations").where("voter_id", "==", user.uid).orderBy("createdAt").get()
+    firebase.firestore().collection("conversations").where("voter_id", "==", user.uid).orderBy("createdAt").get()
     .then((snapshot) => {
       if (snapshot.empty) {
         Alert.alert("No conversations yet");
         return;
       }
+      const data = snapshot.docs[0].data();
+      console.log("data : ", data);
       let c = [];
-      snapshot.forEach((doc) => {
-        c.push(doc);
-      });
+      // data.forEach((doc) => {
+      //   c.push(doc);
+      // });
       setConversations(c);
 
     })
@@ -65,12 +77,11 @@ const ConversationInfiniteScroll = ({ navigation }) => {
     <View>
       <Text>Conversation Infinite Scroll</Text>
       <FlatList
-        keyExtractor={ (item, key) => item.createdAt }
+        keyExtractor={ (item, key) => item.createdAt.toString() }
         data={conversations}
         renderItem={({ item }) => {
-          const x = "Hello";
           return (
-            <TouchableOpacity style={{ borderBottomColor: "black", borderBottomWidth: 1 }} onPress={ () => navigation.navigate("Home", { x, voter: "voter data", token: "some token" }) }>
+            <TouchableOpacity style={{ borderBottomColor: "black", borderBottomWidth: 1 }} onPress={ () => navigation.navigate("Conversation", { item }) }>
               <Text>{ item.read_by.includes(user.uid) ? "" : "Blue dot" }</Text>
               <Text>{ item.messages[0].sender }</Text>
               <Text>{ item.messages.length ? item.messages[0].content.slice(0, 20) + "..." : "" }</Text>

@@ -1,10 +1,12 @@
 import React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { StyleSheet, Text, View, Button, FlatList, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import firebase from 'firebase';
 import firestore from 'firebase/firestore';
 import geohash from 'ngeohash';
+
+import { Ionicons } from '@expo/vector-icons';
+import { StoreContext } from "../contexts/storeContext.js";
 
 const Register = ({navigation}) => {
 
@@ -23,6 +25,7 @@ const Register = ({navigation}) => {
   });
   const [step, setStep] = useState(1);
   const [primary, setPrimary] = useState(false);
+  const store = useContext(StoreContext);
 
   const handleRegister = () => {
     console.log("handleRegister2");
@@ -52,8 +55,8 @@ const Register = ({navigation}) => {
             const lng = json.results[0].geometry.location.lng;
             const hash = geohash.encode(lat, lng);
             console.log("hash : ", hash);
-            return firebase.firestore().collection("campaigns").doc(uid)
-            .set({
+            let obj = {
+              uid,
               campaign_verified: false, // manually ensuring campaign is legit
               campaign_id: "", // manually entering a campaign_id to match with other candidates in the same race
               office: values.office, // manually entering the level "State Representative", "County Judge, etc. so voter knows what level they're dealing with
@@ -75,6 +78,14 @@ const Register = ({navigation}) => {
               paid: false,
               profile_picture: "",
               last_logged_in: Date.now()
+            }
+            firebase.firestore().collection("campaigns").doc(uid)
+            .set(obj)
+            .then(() => {
+              // hacky. LoadingScreen page calls onAuthStateChanged (which calls getUser) when createUserWithEmailAndPassword is called
+              // this is before user can be saved in firestore. So upon registration, LoadingPage calls onAuthStateChanged, user hasn't been saved in Firestore yet so it is undefined
+              // so I set it here. It doesn't come from firestore, I just set it with the object I saved in Firestore above
+              store.getUser(obj);
             })
           })
         }

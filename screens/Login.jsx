@@ -2,7 +2,7 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Button, FlatList, TouchableOpacity, Alert } from 'react-native';
 import * as Facebook from 'expo-facebook';
-import * as firebase from 'firebase';
+import firebase from 'firebase';
 import firestore from 'firebase/firestore';
 
 const Login = (props) => {
@@ -31,14 +31,15 @@ const Login = (props) => {
         // Sign in with credential from the Fb user.
         firebase.auth().signInWithCredential(credential)
         .then((result) => {
-          console.log("result");
+          console.log("result : ");
           if (result.additionalUserInfo.isNewUser) {
-            firebase.firestore().collection(voters).doc(result.user.uid)
+            console.log("result.additionalUserInfo : ", result.additionalUserInfo);
+            firebase.firestore().collection("voters").doc(result.user.uid)
             .set({
-              email: result.user.email,
-              // uid: result.user.uid,
-              profile_picture: result.additionalUserInfo.profile.picture,
-              firstname: result.additionalUserInfo.profile.given_name,
+              // email: result.user.email,
+              uid: result.user.uid,
+              profile_picture: result.additionalUserInfo.profile.picture.data.url,
+              firstname: result.additionalUserInfo.profile.first_name || "",
               admin: false,
               created_at: Date.now(),
               last_logged_in: Date.now()
@@ -46,6 +47,7 @@ const Login = (props) => {
               // voting_address, address_last_updated,convos_arr, will_vote_for(if doable)
             })
             .catch((err) => {
+              console.log("err : ", err);
               Alert.alert(err);
             })
           }
@@ -55,12 +57,14 @@ const Login = (props) => {
               last_logged_in: Date.now()
             })
             .catch((err) => {
+              console.log("err2 : ", err);
               Alert.alert(err);
             })
           }
 
         })
         .catch((error) => {
+          console.log("error : ", error);
           // Handle Errors here.
           let errorCode = error.code;
           let errorMessage = error.message;
@@ -71,7 +75,7 @@ const Login = (props) => {
           // ....
         });
 
-
+        console.log("pre alert");
         Alert.alert('Logged in!!', `Hi ${(await response.json()).name}!`);
       } else {
         // type === 'cancel'

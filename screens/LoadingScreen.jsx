@@ -2,11 +2,11 @@ import React, { useEffect, useContext } from 'react';
 import { ActivityIndicator, View, Text, Alert } from 'react-native';
 import firebase from 'firebase';
 import firestore from 'firebase/firestore';
-import { UserContext } from "../contexts/userContext.js";
+import { StoreContext } from "../contexts/storeContext.js";
 
 const LoadingScreen = ({ navigation }) => {
 
-  const state = useContext(UserContext);
+  const store = useContext(StoreContext);
 
   useEffect(() => {
     console.log("check if Logged In");
@@ -15,15 +15,17 @@ const LoadingScreen = ({ navigation }) => {
       if (user != null) {
         console.log("user != null");
         if (user.providerData[0].providerId == "facebook.com") {
+          console.log("user.uid : ", user.uid);
           firebase.firestore().collection("voters").doc(user.uid).get()
           .then((snapshot) => {
             if (snapshot.exists) {
               const u = snapshot.data();
               console.log("u : ", u);
-              state.getUser(u);
+              store.getUser(u);
               navigation.navigate("VoterStack");
             } else {
-              console.log('document not found');
+              console.log('document not found here : ');
+              navigation.navigate("LoginScreen");
             }
           })
           .catch((err) => {
@@ -38,7 +40,7 @@ const LoadingScreen = ({ navigation }) => {
             console.log("here 2");
             const u = snapshot.data();
             console.log("u : ", u);
-            state.getUser(u);
+            store.getUser(u);
             navigation.navigate("CampaignStack");
           })
           .catch((err) => {
@@ -50,7 +52,7 @@ const LoadingScreen = ({ navigation }) => {
       else {
         console.log("user == null");
         navigation.navigate("LoginScreen");
-        state.getUser({});
+        store.getUser({});
       }
     });
   }, []);

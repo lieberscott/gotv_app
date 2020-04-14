@@ -1,13 +1,13 @@
 import React from 'react';
 import { useState, useEffect, useContext } from 'react';
-import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Dimensions, Button, TouchableOpacity, Alert } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import geohash from 'ngeohash';
 
 import * as firebase from 'firebase';
 import firestore from 'firebase/firestore';
 
-import { UserContext } from "../contexts/userContext.js";
+import { StoreContext } from "../contexts/storeContext.js";
 
 const MapPage = ({ navigation }) => {
 
@@ -15,7 +15,8 @@ const MapPage = ({ navigation }) => {
   const [first, setFirst] = useState(true);
   const latDelta = 0.05;
   const lngDelta = 0.05;
-  const user = useContext(UserContext);
+  const store = useContext(StoreContext);
+  console.log("store : ", store);
 
   const getGeohashRange = ( latitude, longitude, distance) => {
     const lat = 0.0144927536231884; // degrees latitude per mile
@@ -31,21 +32,18 @@ const MapPage = ({ navigation }) => {
   };
 
   useEffect(() => {
-    console.log("useEffect Map!");
+    console.log("useEffect Map! user : ");
     if (first) {
       getPins();
     }
   }, [pins_arr])
 
   const getPins = () => {
-    const userLat = user.user.lat;
-    const userLng = user.user.lng;
-    // const userLat = 41.98984444;
-    // const userLng = -87.6579438;
-    //
+    const userLat = store.user.lat;
+    const userLng = store.user.lng;
     const range = getGeohashRange(userLat, userLng, 10);
 
-    console.log("range : ", range);
+    console.log("range : ");
 
     firebase.firestore().collection("voters")
     .orderBy("geohash")
@@ -69,18 +67,70 @@ const MapPage = ({ navigation }) => {
   }
 
   const handlePress = (v) => {
-    navigtaion.navigate("CampaignConversationInfiniteScroll", { initiateConversation: true, voter: v })
+    console.log("handlePress");
+    console.log("v : ", v);
+    console.log("store.user : ", store.user);
+    let initiating = false; // initiating conversation? will check below
+
+    // conversation_id = campaign_id (which is the same for all campaigns in the same race) + "-" + voter_id
+    // this way you can always check if the document already exists before creating it
+    const newConvoId = store.user.campaign_id + "-" + v.uid;
+    const obj = {
+      conversation_id: newConvoId,
+      voter_id: v.uid,
+      voter_name: v.firstname,
+      voter_address: v.voting_address,
+      [store.user.uid]: true,
+      participant_info: [{
+        _id: v.uid,
+        name: v.firstname,
+        public_name: v.firstname,
+        campaign: false,
+        avatar: 'https://placeimg.com/140/140/any'
+      },
+    {
+      _id: store.user.uid,
+      name: store.user.user_first,
+      public_name: store.user.public_name,
+      campaign: true,
+      avatar: 'https://placeimg.com/140/140/any'
+    }],
+    currently_leaning_toward: "Undecided",
+    read_by: [{
+      [v.uid]: false,
+      [store.user.uid]: false
+    }],
+    date_of_last_message: Date.now()
+    }
+
+    // console.log("obj : ", obj);
+    firebase.firestore().collection("conversations").doc(newConvoId).get().then((snapshot) => {
+      if (!snapshot.exists) {
+        console.log("!snapshot.exists");
+        initiating = true;
+        return firebase.firestore().collection("conversations").doc(newConvoId).set(obj)
+      }
+    })
+    .then(() => { // ref is conversation_id
+      console.log("navigation.navigate(Conversation)");
+      navigation.navigate("Conversation", { conversation_id: newConvoId, name: v.firstname, address: v.address, initiating });
+    })
+    .catch((err) => {
+      console.log("Err : ", err);
+    });
   }
 
   return (
     <View style={ styles.container }>
-      <MapView style={ styles.mapStyle } region={{ latitude: user.user.lat, longitude: user.user.lng, latitudeDelta: latDelta, longitudeDelta: lngDelta }} >
+      <MapView style={ styles.mapStyle } region={{ latitude: store.user.lat, longitude: store.user.lng, latitudeDelta: latDelta, longitudeDelta: lngDelta }} >
         { pins_arr.length ?  pins_arr.map((pin, i) => {
           return (<Marker key={ "pin" + i } coordinate={{ latitude: pin.lat, longitude: pin.lng }}>
-            <Callout>
+            <Callout onPress={ () => handlePress(pin) }>
               <Text>{ pin.firstname }</Text>
-              <Text>{ pin.address }</Text>
-              <Button onPress={ (pin) => handlePress(pin) } title="Go to Conversation">
+              <Text>{ pin.voting_address }</Text>
+              <TouchableOpacity>
+                <Button title="Go to Conversation" />
+              </TouchableOpacity>
             </Callout>
           </Marker> )
         }) : <Text>""</Text> }

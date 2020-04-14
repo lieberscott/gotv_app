@@ -9,8 +9,7 @@ import Navigator from './routes/drawer';
 import CampaignNavigator from './routes/campaignDrawer';
 import TabNavigator from './routes/tabs';
 import LoadingScreen from './screens/LoadingScreen';
-import MapPage from './screens/MapPage';
-import { UserContext } from "./contexts/userContext.js";
+import { StoreContext } from "./contexts/storeContext.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDJ5t2aZhaXka4djV0aWVW8k2JZg5tVm_E",
@@ -46,12 +45,12 @@ export default function App() {
     console.log("admin : ", admin);
     return (
       <View style={{ flex: 1 }}>
-        <UserContext.Provider value={{
+        <StoreContext.Provider value={{
           user,
           getUser
         }}>
           <AppNavigator />
-        </UserContext.Provider>
+        </StoreContext.Provider>
       </View>
     );
   }

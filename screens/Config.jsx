@@ -5,12 +5,13 @@ import { StyleSheet, Text, View, Button, TouchableOpacity, Alert, TextInput } fr
 import firebase from 'firebase';
 import firestore from 'firebase/firestore';
 import geohash from 'ngeohash';
-import { UserContext } from "../contexts/userContext.js";
+import { StoreContext } from "../contexts/storeContext.js";
 
 const Config = () => {
 
   const [address, setAddress] = useState("");
-  const user = useContext(UserContext);
+  const store = useContext(StoreContext);
+  console.log("user : ", user);
 
   const handleChangeAddress = () => {
 
@@ -26,14 +27,15 @@ const Config = () => {
         const lat = json.results[0].geometry.location.lat;
         const lng = json.results[0].geometry.location.lng;
         const hash = geohash.encode(lat, lng);
-        return firebase.firestore().collection("voters").doc(user.user.uid)
-        .set({ voting_address: address, lat, lng, geohash: hash });
+        return firebase.firestore().collection("voters").doc(store.user.uid)
+        .set({ voting_address: address, lat, lng, geohash: hash }, { merge: true });
       })
       .then(() => {
         setAddress("");
         Alert.alert("Address updated");
       })
       .catch((err) => {
+        console.log("Err : ", err);
         Alert.alert(err);
       })
     }
@@ -49,7 +51,7 @@ const Config = () => {
 
   const handleDelete = () => {
     firebase.auth().currentUser().delete().then(() => {
-      return firebase.database().collection("voters").doc(user.user.uid).delete();
+      return firebase.database().collection("voters").doc(store.user.uid).delete();
     })
     .then(() => {
       return firebase.auth().signOut();

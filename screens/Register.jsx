@@ -71,7 +71,7 @@ const Register = ({navigation}) => {
               primary: primary,
               user_first: values.userfirst,
               user_last: values.userlast,
-              convos_arr: [],
+              voter_ids_of_convos: {},
               email_verified: false,
               created_at: Date.now(),
               admin: true,

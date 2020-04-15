@@ -21,7 +21,7 @@ const CampaignConversationInfiniteScroll = ({ navigation, initiateConversation, 
   const getData = () => {
     firebase.firestore().collection("conversations")
     .where(store.user.uid, "==", true)
-    .orderBy("date_of_last_message")
+    // .orderBy("date_of_last_message")
     .get()
     .then((snapshot) => {
       if (snapshot.empty) {
@@ -57,7 +57,7 @@ const CampaignConversationInfiniteScroll = ({ navigation, initiateConversation, 
       <TouchableOpacity>
         <Button title="Map View" onPress={ () => { navigation.navigate("MapPage") }} />
       </TouchableOpacity>
-      { conversations && ( <FlatList
+      <FlatList
         keyExtractor={ (item, key) => item.createdAt ? item.createdAt.toString() : key.toString() }
         data={conversations}
         renderItem={({ item }) => {
@@ -72,7 +72,7 @@ const CampaignConversationInfiniteScroll = ({ navigation, initiateConversation, 
         }}
         refreshing={ refreshing }
         onRefresh={ handleRefresh }
-      /> ) }
+      />
     </View>
   )
 }

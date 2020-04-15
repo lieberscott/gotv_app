@@ -1,3 +1,10 @@
+// x (sorta) - on GiftedChat, need to distinguish between people in the conversation
+// x - on MapPage, red pins for new voters without conversations started yet, blue if they've already started a conversation
+// x - on MapPage, allow zooming in and out at appropriate distances
+// upon Map move, re-read the database (and re-draw the pins) given the new center position of the map
+// function to delete old messages so document doesn't exceed 1mb
+// you need to delete your campaign users and re-register them to allow the changes above (specifically the different color pins) to be applied, given how the new code saves and then reads the campaign user object
+
 import React from 'react';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Alert } from 'react-native';

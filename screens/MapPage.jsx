@@ -81,26 +81,24 @@ const MapPage = ({ navigation }) => {
       voter_name: v.firstname,
       voter_address: v.voting_address,
       [store.user.uid]: true,
-      participant_info: [{
-        _id: v.uid,
-        name: v.firstname,
-        public_name: v.firstname,
-        campaign: false,
-        avatar: 'https://placeimg.com/140/140/any'
+      participant_info: {
+        [v.uid]: {
+          name: v.firstname,
+          public_name: v.firstname,
+          campaign: false
+        },
+        [store.user.uid]: {
+          name: store.user.user_first,
+          public_name: store.user.public_name,
+          campaign: true
+        }
       },
-    {
-      _id: store.user.uid,
-      name: store.user.user_first,
-      public_name: store.user.public_name,
-      campaign: true,
-      avatar: 'https://placeimg.com/140/140/any'
-    }],
-    currently_leaning_toward: "Undecided",
-    read_by: [{
-      [v.uid]: false,
-      [store.user.uid]: false
-    }],
-    date_of_last_message: Date.now()
+      currently_leaning_toward: "Undecided",
+      read_by: [{
+        [v.uid]: false,
+        [store.user.uid]: false
+      }],
+      date_of_last_message: Date.now()
     }
 
     // console.log("obj : ", obj);
@@ -110,8 +108,23 @@ const MapPage = ({ navigation }) => {
         initiating = true;
         return firebase.firestore().collection("conversations").doc(newConvoId).set(obj)
       }
+      else {
+        return firebase.firestore().collection("conversations").doc(newConvoId).set({
+          [store.user.uid]: true,
+          participant_info: {
+            [store.user.uid]: {
+              name: store.user.user_first,
+              public_name: store.user.public_name,
+              campaign: true
+            }
+          }
+        }, { merge: true })
+      }
     })
-    .then(() => { // ref is conversation_id
+    .then(() => {
+      return firebase.firestore().collection("campaigns").doc(store.user.uid).set({
+        voter_ids_of_convos: { [v.uid]: true }
+      }, { merge: true })
       console.log("navigation.navigate(Conversation)");
       navigation.navigate("Conversation", { conversation_id: newConvoId, name: v.firstname, address: v.address, initiating });
     })
@@ -122,9 +135,10 @@ const MapPage = ({ navigation }) => {
 
   return (
     <View style={ styles.container }>
-      <MapView style={ styles.mapStyle } region={{ latitude: store.user.lat, longitude: store.user.lng, latitudeDelta: latDelta, longitudeDelta: lngDelta }} >
+      <MapView style={ styles.mapStyle } region={{ latitude: store.user.lat, longitude: store.user.lng, latitudeDelta: latDelta, longitudeDelta: lngDelta }} minZoomLevel={ 8 } maxZoomLevel={ 19 }>
         { pins_arr.length ?  pins_arr.map((pin, i) => {
-          return (<Marker key={ "pin" + i } coordinate={{ latitude: pin.lat, longitude: pin.lng }}>
+          const voter_ids_of_convos_arr = pin.voter_ids_of_convos ? Object.keys(pin.voter_ids_of_convos) : []; // ["fieoq80321", "242u3n3", ... ]
+          return (<Marker pinColor={ voter_ids_of_convos_arr.includes(pin.uid) ? "red" : "yellow" } key={ "pin" + i } coordinate={{ latitude: pin.lat, longitude: pin.lng }}>
             <Callout onPress={ () => handlePress(pin) }>
               <Text>{ pin.firstname }</Text>
               <Text>{ pin.voting_address }</Text>

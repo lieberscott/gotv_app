@@ -20,27 +20,29 @@ const Conversation = ({ navigation }) => {
 
   useEffect(() => {
     firebase.database().ref("conversations/" + conversation_id).on("value", (snapshot) => {
-      console.log("snapshot");
+      console.log("snapshot, conversation_id : ", conversation_id);
       if (messages.length == 0) {
         let data = snapshot.val();
-        let keys = Object.keys(data);
-        let len = keys.length;
-        console.log("len : ", len);
-        let arr = [];
-        for (let i = len - 1; i >= 0; i--) {
-          arr.push(data[keys[i]][0]);
+        if (data) {
+          let keys = Object.keys(data);
+          let len = keys.length;
+          console.log("len : ", len);
+          let arr = [];
+          for (let i = len - 1; i >= 0; i--) {
+            arr.push(data[keys[i]][0]);
+          }
+          console.log("arrr");
+          setMessages(arr);
         }
-        console.log("arrr");
-        setMessages(arr);
       }
     });
   }, [])
 
   const onSend = (newMessage = []) => {
     console.log("new message");
-    newMessage[0].user.name = store.user.user_first + ", " + store.user.public_name;
+    // newMessage[0].user.name = store.user.user_first + ", " + store.user.public_name;
     // newMessage[0].user.avatar = store.user.image;
-    newMessage[0].user.avatar = 'https://placeimg.com/140/140/any';
+    // newMessage[0].user.avatar = 'https://placeimg.com/140/140/any';
     firebase.database().ref("conversations/" + conversation_id)
     .push(newMessage)
     .then((doc1) => {
@@ -66,7 +68,11 @@ const Conversation = ({ navigation }) => {
       onSend={newMessage => onSend(newMessage)}
       user={{
         _id: store.user.uid,
+        name: store.user.user_first + ", " + store.user.public_name,
+        avatar: store.user.profile_picture || 'https://ui-avatars.com/api/?background=d88413&color=FFF&name=${store.user.user_first}'
       }}
+      isTyping={ true }
+      maxInputLength={ 380 }
     />
   )
 }
